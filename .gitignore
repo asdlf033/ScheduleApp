@@ -4,20 +4,70 @@
 /node_modules
 /.pnp
 .pnp.js
+client/node_modules
+server/node_modules
 
 # testing
 /coverage
 
 # production
 /build
+client/build
+server/dist
 
-# misc
-.DS_Store
+# Environment variables (민감 정보)
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+*.env
 
+# misc
+.DS_Store
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+
+# Android
+client/android/.gradle
+client/android/build
+client/android/app/build
+client/android/app/release
+client/android/local.properties
+client/android/.idea
+client/android/*.iml
+client/android/.externalNativeBuild
+client/android/.cxx
+*.keystore
+*.jks
+*.apk
+*.aab
+
+# iOS
+client/ios/App/Pods
+client/ios/App/build
+client/ios/App/DerivedData
+client/ios/App/*.xcworkspace/xcuserdata
+client/ios/App/*.xcodeproj/xcuserdata
+client/ios/App/*.xcodeproj/project.xcworkspace/xcuserdata
+client/ios/App/*.xcuserstate
+client/ios/App/*.xcuserdatad
+*.ipa
+
+# Capacitor
+client/.capacitor
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

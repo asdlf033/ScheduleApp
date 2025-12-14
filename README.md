@@ -1,46 +1,84 @@
-# Getting Started with Create React App
+# Schedule Web
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+스케줄 관리 웹 애플리케이션 (React + Express + MySQL)
 
-## Available Scripts
+## 프로젝트 구조
 
-In the project directory, you can run:
+```
+schedule-web/
+├── client/          # React 프론트엔드
+├── server/          # Express 백엔드
+└── .env.example     # 환경 변수 템플릿
+```
 
-### `npm start`
+## 시작하기
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### 1. 환경 변수 설정
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```bash
+# 서버 디렉토리에서
+cd server
+cp ../.env.example .env
+# .env 파일을 열어서 실제 값으로 수정
+```
 
-### `npm test`
+### 2. 의존성 설치
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+# 루트 디렉토리
+npm install
 
-### `npm run build`
+# 클라이언트
+cd client
+npm install
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# 서버
+cd ../server
+npm install
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 3. 데이터베이스 설정
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+cd server
+# MySQL 데이터베이스 생성 및 초기화
+mysql -u root -p < init_database.sql
+```
 
-### `npm run eject`
+### 4. 실행
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```bash
+# 서버 실행 (터미널 1)
+cd server
+npm run dev
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# 클라이언트 실행 (터미널 2)
+cd client
+npm start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 하이브리드 앱 빌드
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Android
 
-## Learn More
+```bash
+cd client
+npm run build
+npm run cap:sync
+npm run cap:open:android
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### iOS
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+cd client
+npm run build
+npm run cap:sync
+npm run cap:open:ios
+```
+
+## 중요 사항
+
+- `.env` 파일은 절대 Git에 커밋하지 마세요
+- JWT_SECRET은 강력한 랜덤 문자열을 사용하세요
+- 프로덕션 환경에서는 반드시 환경 변수를 설정하세요
