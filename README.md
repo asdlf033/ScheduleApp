@@ -76,9 +76,3 @@ npm run build
 npm run cap:sync
 npm run cap:open:ios
 ```
-
-## 중요 사항
-
-- `.env` 파일은 절대 Git에 커밋하지 마세요
-- JWT_SECRET은 강력한 랜덤 문자열을 사용하세요
-- 프로덕션 환경에서는 반드시 환경 변수를 설정하세요

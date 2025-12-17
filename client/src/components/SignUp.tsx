@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import './SignUp.css'; 
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 interface SignUpFormData {
   email: string;
@@ -69,7 +70,13 @@ const SignUp: React.FC = () => {
     
     if (validateForm()) {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/signup', {
+        console.log('API URL:', `${API_BASE_URL}/api/auth/signup`);
+        
+        // 타임아웃 설정 (10초)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,7 +86,24 @@ const SignUp: React.FC = () => {
             email: formData.email,
             password: formData.password,
           }),
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server error:', errorText);
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText || '서버 오류가 발생했습니다.' };
+          }
+          alert(errorData.message || '회원가입에 실패했습니다.');
+          return;
+        }
 
         const data = await response.json();
 
@@ -89,9 +113,23 @@ const SignUp: React.FC = () => {
         } else {
           alert(data.message || '회원가입에 실패했습니다.');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('회원가입 오류:', error);
-        alert('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('API URL 시도:', `${API_BASE_URL}/api/auth/signup`);
+        
+        let errorMessage = '서버에 연결할 수 없습니다.';
+        if (error.name === 'AbortError') {
+          errorMessage = '서버 응답 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.';
+        } else if (error.message) {
+          errorMessage = `연결 오류: ${error.message}`;
+        }
+        
+        const debugInfo = `오류 상세:\n- 오류 타입: ${error.name}\n- 오류 메시지: ${error.message}\n\n시도한 URL:\n${API_BASE_URL}/api/auth/signup\n\n해결 방법:\n1. Android Studio에서 앱 재빌드 (Build → Rebuild Project)\n2. 에뮬레이터 재시작\n3. 서버 실행 확인: http://localhost:5000\n\n에뮬레이터용: http://10.0.2.2:5000\n실제 기기용: http://192.168.219.184:5000`;
+        
+        alert(`${errorMessage}\n\n${debugInfo}`);
       }
     }
   };

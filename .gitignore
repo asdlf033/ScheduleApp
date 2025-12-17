@@ -71,3 +71,7 @@ client/.capacitor
 # OS
 .DS_Store
 Thumbs.db
+
+# Uploads
+server/uploads/
+uploads/

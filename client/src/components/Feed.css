@@ -1,0 +1,156 @@
+.feed-container {
+  min-height: 100vh;
+  background-color: #0b0d11;
+  padding-bottom: 90px;
+  color: #e8ecf4;
+}
+
+.feed-header {
+  background-color: #0f131c;
+  padding: 20px;
+  border-bottom: 1px solid #1c2231;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.feed-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  color: #f5f7fb;
+  letter-spacing: 0.2px;
+}
+
+.feed-subtitle {
+  margin: 0;
+  color: #9aa0ad;
+  font-size: 14px;
+}
+
+.feed-list {
+  padding: 16px;
+}
+
+.feed-item {
+  background-color: #0f131c;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  border: 1px solid #1c2231;
+}
+
+.feed-item-header {
+  margin-bottom: 12px;
+}
+
+.feed-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.author-name {
+  font-weight: 700;
+  color: #f5f7fb;
+  font-size: 16px;
+}
+
+.feed-date {
+  color: #8fa3c7;
+  font-size: 12px;
+}
+
+.feed-content {
+  margin-top: 8px;
+}
+
+.feed-text {
+  margin: 0 0 12px 0;
+  color: #e8ecf4;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.feed-image-container {
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #1f2635;
+}
+
+.feed-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 420px;
+  object-fit: cover;
+  background: #0b0d11;
+}
+
+.no-feed {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9aa0ad;
+  font-size: 16px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #9aa0ad;
+}
+
+.error-message {
+  background-color: rgba(255, 107, 107, 0.08);
+  color: #ff9b9b;
+  padding: 16px;
+  margin: 16px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid rgba(255, 107, 107, 0.25);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #0f131c;
+  border-top: 1px solid #1c2231;
+  position: sticky;
+  bottom: 80px;
+  z-index: 99;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  border: 1px solid #1f2635;
+  background-color: #121724;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  color: #e8ecf4;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #182034;
+  border-color: #2c3a55;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #9aa0ad;
+  min-width: 80px;
+  text-align: center;
+}
+

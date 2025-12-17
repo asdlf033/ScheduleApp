@@ -1,7 +1,8 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import './Login.css';
 import { Link, useNavigate } from 'react-router-dom';
-import { setToken } from '../utils/auth';
+import { setToken, isAuthenticated } from '../utils/auth';
+import { API_BASE_URL } from '../config/api';
 
 interface LoginFormData {
     email: string;
@@ -16,6 +17,17 @@ const Login: React.FC = () => {
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
+
+    // JWT 토큰이 유효하면 홈 페이지로 리다이렉트
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await isAuthenticated();
+            if (authenticated) {
+                navigate('/home');
+            }
+        };
+        checkAuth();
+    }, [navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -53,7 +65,7 @@ const Login: React.FC = () => {
 
         if(validateForm()) {
             try {
-                const response = await fetch('http://localhost:5000/api/auth/login', {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -68,9 +80,9 @@ const Login: React.FC = () => {
 
                 if(data.success) {
                     // 토큰 저장
-                    setToken(data.token);
+                    await setToken(data.token);
                     alert('로그인 성공!');
-                    navigate('/'); // 메인 페이지로 이동
+                    navigate('/home'); // 홈 페이지로 이동
                 }else {
                     alert(data.message || '로그인에 실패했습니다.');
                 }

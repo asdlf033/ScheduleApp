@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Schedule Web',
   webDir: 'build',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'http'
   }
 };
 
