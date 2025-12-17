@@ -25,9 +25,11 @@ const getApiBaseUrl = (): string => {
       // 현재는 에뮬레이터용으로 10.0.2.2 사용
       return 'http://10.0.2.2:5000';
     }
-    // iOS 시뮬레이터 (localhost 작동)
-    // iOS 실제 기기는 컴퓨터 IP 주소 필요
-    return 'http://localhost:5000';
+    // iOS 시뮬레이터 또는 실제 기기
+    // 시뮬레이터: localhost 작동하지만 실제 기기에서는 Mac의 IP 주소 필요
+    // 실제 기기에서 실행 시 아래 IP를 Mac의 실제 IP 주소로 변경하세요
+    // 같은 Wi-Fi 네트워크에 연결되어 있어야 함
+    return 'http://192.168.7.144:5000'; // Mac의 IP 주소
   }
 
   // 웹 브라우저

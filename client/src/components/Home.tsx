@@ -33,12 +33,20 @@ const Home: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [expandedTodoId, setExpandedTodoId] = useState<number | null>(null);
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [newGoal, setNewGoal] = useState('');
   const [goalsLoading, setGoalsLoading] = useState(false);
   const [showCelebrate, setShowCelebrate] = useState(false);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [showGoalBottomSheet, setShowGoalBottomSheet] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [showTodoDetailSheet, setShowTodoDetailSheet] = useState(false);
+  const [completingGoalId, setCompletingGoalId] = useState<number | null>(null);
+  const [isEditingTodo, setIsEditingTodo] = useState(false);
+  const [editTodoContent, setEditTodoContent] = useState('');
+  const [editTodoImage, setEditTodoImage] = useState<File | null>(null);
+  const [editTodoImagePreview, setEditTodoImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -132,10 +140,13 @@ const Home: React.FC = () => {
     setImagePreview(null);
   };
 
-  const handleAddTodo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // 스케줄 내용은 필수, 이미지는 선택
-    if (!newTodo.trim()) return;
+  const handleAddTodo = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    // 스케줄 내용은 필수, 이미지는 선택 (없어도 추가 가능)
+    if (!newTodo.trim()) {
+      alert('스케줄 내용을 입력해주세요.');
+      return;
+    }
 
     try {
       const headers = await getAuthHeaders();
@@ -168,6 +179,7 @@ const Home: React.FC = () => {
         setSelectedImage(null);
         setImagePreview(null);
         loadTodos();
+        handleCloseBottomSheet();
       } else {
         alert(data.message || '할일 추가에 실패했습니다.');
       }
@@ -177,8 +189,59 @@ const Home: React.FC = () => {
     }
   };
 
+  const handleAddGoal = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newGoal.trim()) return;
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/api/goals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(headers.Authorization
+            ? { Authorization: headers.Authorization }
+            : {}),
+        },
+        body: JSON.stringify({
+          title: newGoal,
+          date: selectedDate,
+        }),
+      });
+
+      if (response.status === 401) {
+        await removeToken();
+        navigate('/');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setNewGoal('');
+        handleCloseGoalBottomSheet();
+        loadGoals();
+      } else {
+        alert(data.message || '목표 추가에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('목표 추가 오류:', error);
+      alert('서버에 연결할 수 없습니다.');
+    }
+  };
+
+  const handleCloseBottomSheet = () => {
+    setShowBottomSheet(false);
+    setNewTodo('');
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  const handleCloseGoalBottomSheet = () => {
+    setShowGoalBottomSheet(false);
+    setNewGoal('');
+  };
+
   const handleDeleteTodo = async (id: number) => {
-    if (!window.confirm('할일을 삭제하시겠습니까?')) return;
+    if (!window.confirm('스케줄을 삭제하시겠습니까?')) return;
 
     try {
       const headers = await getAuthHeaders();
@@ -195,11 +258,100 @@ const Home: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
+        setShowTodoDetailSheet(false);
+        setSelectedTodo(null);
         loadTodos();
+      } else {
+        alert(data.message || '삭제에 실패했습니다.');
       }
     } catch (error) {
       console.error('할일 삭제 오류:', error);
+      alert('서버에 연결할 수 없습니다.');
     }
+  };
+
+  const handleEditTodoImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('이미지 크기는 5MB 이하여야 합니다.');
+        return;
+      }
+      setEditTodoImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditTodoImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeEditTodoImage = () => {
+    setEditTodoImage(null);
+    setEditTodoImagePreview(null);
+  };
+
+  const handleUpdateTodo = async () => {
+    if (!selectedTodo || (!editTodoContent.trim() && !editTodoImage)) {
+      alert('내용 또는 이미지를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const headers = await getAuthHeaders();
+      
+      const formData = new FormData();
+      formData.append('content', editTodoContent);
+      if (editTodoImage) {
+        formData.append('image', editTodoImage);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/todos/${selectedTodo.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': headers.Authorization || '',
+        },
+        body: formData,
+      });
+
+      if (response.status === 401) {
+        await removeToken();
+        navigate('/');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setIsEditingTodo(false);
+        setEditTodoContent('');
+        setEditTodoImage(null);
+        setEditTodoImagePreview(null);
+        loadTodos();
+        setShowTodoDetailSheet(false);
+        setSelectedTodo(null);
+      } else {
+        alert(data.message || '수정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('할일 수정 오류:', error);
+      alert('서버에 연결할 수 없습니다.');
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (selectedTodo) {
+      setEditTodoContent(selectedTodo.content);
+      setEditTodoImage(null);
+      setEditTodoImagePreview(selectedTodo.imageUrl ? `${API_BASE_URL}${selectedTodo.imageUrl}` : null);
+      setIsEditingTodo(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingTodo(false);
+    setEditTodoContent('');
+    setEditTodoImage(null);
+    setEditTodoImagePreview(null);
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -251,7 +403,7 @@ const Home: React.FC = () => {
   return (
     <div className="main-container app-content">
       <div className="main-header">
-        <h1 className="app-title">In Schedule</h1>
+        <h1 className="app-title">Daily Scheduler</h1>
       </div>
 
       <div className="main-content">
@@ -289,36 +441,20 @@ const Home: React.FC = () => {
         <div className="todos-section">
           <h2>{selectedDate} 스케줄</h2>
 
-          <form onSubmit={handleAddTodo} className="todo-form">
-            <button type="submit" className="todo-add-btn">
+          <div className="add-buttons-row">
+            <button
+              onClick={() => setShowBottomSheet(true)}
+              className="todo-add-btn-main"
+            >
               + 스케줄 추가
             </button>
-            <input
-              type="text"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-              placeholder="무슨 스케줄인가요?"
-              className="todo-input"
-            />
-            <div className="image-upload-section">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                id="image-upload"
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="image-upload" className="image-upload-btn">
-                📷 사진 선택 (선택)
-              </label>
-              {imagePreview && (
-                <div className="image-preview-container">
-                  <img src={imagePreview} alt="미리보기" className="image-preview" />
-                  <button type="button" onClick={removeImage} className="remove-image-btn">×</button>
-                </div>
-              )}
-            </div>
-          </form>
+            <button
+              onClick={() => setShowGoalBottomSheet(true)}
+              className="goal-add-btn-main"
+            >
+              + 목표 추가
+            </button>
+          </div>
 
           <div className="todos-list">
             {loading ? (
@@ -327,141 +463,56 @@ const Home: React.FC = () => {
               <div className="no-todos">할일이 없습니다.</div>
             ) : (
               todos.map((todo) => (
-                <div key={todo.id} className="todo-item">
-                  <div
-                    className="todo-header-row"
-                    onClick={() =>
-                      setExpandedTodoId(
-                        expandedTodoId === todo.id ? null : todo.id
-                      )
-                    }
-                  >
-                    <div className="todo-header-main">
-                      <span className="todo-text">{todo.content}</span>
-                      <span className="todo-author">- {todo.userName}</span>
-                    </div>
-                    <div className="todo-header-actions">
-                      <span
-                        className={`todo-expand-icon ${
-                          expandedTodoId === todo.id ? 'expanded' : ''
-                        }`}
-                      >
-                        ▼
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTodo(todo.id);
+                <div 
+                  key={todo.id} 
+                  className={`todo-item ${todo.imageUrl ? 'has-image' : ''}`}
+                  onClick={() => {
+                    setSelectedTodo(todo);
+                    setShowTodoDetailSheet(true);
+                  }}
+                >
+                  {todo.imageUrl && (
+                    <div className="todo-image-wrapper">
+                      <img
+                        src={`${API_BASE_URL}${todo.imageUrl}`}
+                        alt={todo.content}
+                        className="todo-list-image"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
                         }}
-                        className="todo-delete-btn"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-
-                  {expandedTodoId === todo.id && (
-                    <div className="todo-detail-drop">
-                      <div className="todo-detail-row">
-                        <span className="todo-detail-label">내용</span>
-                        <p className="todo-detail-text">{todo.content}</p>
-                      </div>
-                      {todo.imageUrl && (
-                        <div className="todo-image-container">
-                          <img
-                            src={`${API_BASE_URL}${todo.imageUrl}`}
-                            alt="할일 이미지"
-                            className="todo-image"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                'none';
-                            }}
-                          />
-                        </div>
-                      )}
+                      />
                     </div>
                   )}
+                  <div className="todo-content-wrapper">
+                    <div className="todo-text">{todo.content}</div>
+                    <div className="todo-author">{todo.userName}</div>
+                  </div>
                 </div>
               ))
             )}
           </div>
 
-          <div className="goals-section">
-            <div className="goals-header">
-              <h2>오늘 목표</h2>
-            </div>
-
-            <form
-              className="goal-form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!newGoal.trim()) return;
-                try {
-                  const headers = await getAuthHeaders();
-                  const response = await fetch(`${API_BASE_URL}/api/goals`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      ...(headers.Authorization
-                        ? { Authorization: headers.Authorization }
-                        : {}),
-                    },
-                    body: JSON.stringify({
-                      title: newGoal,
-                      date: selectedDate,
-                    }),
-                  });
-
-                  if (response.status === 401) {
-                    await removeToken();
-                    navigate('/');
-                    return;
-                  }
-
-                  const data = await response.json();
-                  if (data.success) {
-                    setNewGoal('');
-                    loadGoals();
-                  } else {
-                    alert(data.message || '목표 추가에 실패했습니다.');
-                  }
-                } catch (error) {
-                  console.error('목표 추가 오류:', error);
-                  alert('서버에 연결할 수 없습니다.');
-                }
-              }}
-            >
-              <input
-                type="text"
-                className="goal-input"
-                placeholder="오늘 꼭 달성하고 싶은 목표를 적어보세요"
-                value={newGoal}
-                onChange={(e) => setNewGoal(e.target.value)}
-              />
-              <button type="submit" className="goal-add-btn">
-                + 목표 추가
-              </button>
-            </form>
-
-            <div className="goals-list">
-              {goalsLoading ? (
-                <div className="goals-loading">목표 불러오는 중...</div>
-              ) : goals.length === 0 ? (
-                <div className="goals-empty">아직 오늘 목표가 없습니다.</div>
-              ) : (
-                goals.map((goal) => (
+          {/* Goals 목록 */}
+          <div className="goals-list-section">
+            <h3>오늘 목표</h3>
+            {goalsLoading ? (
+              <div className="goals-loading">목표 불러오는 중...</div>
+            ) : goals.length === 0 ? (
+              <div className="goals-empty">아직 오늘 목표가 없습니다.</div>
+            ) : (
+              <div className="goals-list">
+                {goals.map((goal) => (
                   <div
                     key={goal.id}
                     className={`goal-item ${
                       goal.isCompleted ? 'completed' : ''
-                    }`}
+                    } ${completingGoalId === goal.id ? 'completing' : ''}`}
                   >
                     <div className="goal-main">
                       <span className="goal-title">{goal.title}</span>
-                      {goal.isCompleted && (
-                        <span className="goal-status">달성 완료!</span>
-                      )}
+                      {goal.isCompleted ? (
+                        <span className="goal-status">달성되었음 ✓</span>
+                      ) : null}
                     </div>
                     {!goal.isCompleted && (
                       <button
@@ -469,6 +520,7 @@ const Home: React.FC = () => {
                         className="goal-complete-btn"
                         onClick={async () => {
                           try {
+                            setCompletingGoalId(goal.id);
                             const headers = await getAuthHeaders();
                             const response = await fetch(
                               `${API_BASE_URL}/api/goals/${goal.id}/complete`,
@@ -490,21 +542,20 @@ const Home: React.FC = () => {
 
                             const data = await response.json();
                             if (data.success) {
-                              loadGoals();
+                              await loadGoals();
                               setShowCelebrate(true);
-                              setTimeout(
-                                () => setShowCelebrate(false),
-                                1800
-                              );
+                              setTimeout(() => {
+                                setShowCelebrate(false);
+                                setCompletingGoalId(null);
+                              }, 2000);
                             } else {
-                              alert(
-                                data.message ||
-                                  '목표 달성 처리에 실패했습니다.'
-                              );
+                              alert(data.message || '목표 달성 처리에 실패했습니다.');
+                              setCompletingGoalId(null);
                             }
                           } catch (error) {
                             console.error('목표 달성 오류:', error);
                             alert('서버에 연결할 수 없습니다.');
+                            setCompletingGoalId(null);
                           }
                         }}
                       >
@@ -512,12 +563,205 @@ const Home: React.FC = () => {
                       </button>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* 할일 상세 Bottom Sheet Dialog */}
+      {showTodoDetailSheet && selectedTodo && (
+        <>
+          <div className="bottom-sheet-overlay" onClick={() => {
+            setShowTodoDetailSheet(false);
+            setIsEditingTodo(false);
+            handleCancelEdit();
+          }}></div>
+          <div className="bottom-sheet">
+            <div className="bottom-sheet-header">
+              <h3>{isEditingTodo ? '스케줄 수정' : '스케줄 상세'}</h3>
+              <button className="bottom-sheet-close" onClick={() => {
+                setShowTodoDetailSheet(false);
+                setIsEditingTodo(false);
+                handleCancelEdit();
+              }}>×</button>
+            </div>
+            
+            <div className="bottom-sheet-content">
+              {!isEditingTodo ? (
+                <>
+                  <div className="todo-detail-section">
+                    <div className="todo-detail-info">
+                      <label>내용</label>
+                      <p className="todo-detail-text">{selectedTodo.content}</p>
+                      <span className="todo-detail-author">- {selectedTodo.userName}</span>
+                    </div>
+                    
+                    {selectedTodo.imageUrl && (
+                      <div className="todo-detail-image">
+                        <img
+                          src={`${API_BASE_URL}${selectedTodo.imageUrl}`}
+                          alt="스케줄 이미지"
+                          className="todo-detail-img"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="todo-detail-actions">
+                    <button
+                      onClick={handleStartEdit}
+                      className="todo-edit-btn"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTodo(selectedTodo.id)}
+                      className="todo-delete-btn-detail"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <form onSubmit={(e) => { e.preventDefault(); handleUpdateTodo(); }}>
+                  <div className="bottom-sheet-form-group">
+                    <label>스케줄 내용</label>
+                    <input
+                      type="text"
+                      value={editTodoContent}
+                      onChange={(e) => setEditTodoContent(e.target.value)}
+                      placeholder="무슨 스케줄인가요?"
+                      className="bottom-sheet-input"
+                    />
+                  </div>
+
+                  <div className="bottom-sheet-form-group">
+                    <label>사진 변경 (선택)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditTodoImageSelect}
+                      id="edit-todo-image-upload"
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="edit-todo-image-upload" className="bottom-sheet-image-btn">
+                      📷 사진 선택
+                    </label>
+                    {editTodoImagePreview && (
+                      <div className="bottom-sheet-image-preview">
+                        <img src={editTodoImagePreview} alt="미리보기" />
+                        <button type="button" onClick={removeEditTodoImage} className="bottom-sheet-remove-image">×</button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="todo-edit-actions">
+                    <button type="submit" className="todo-save-btn">
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="todo-cancel-btn"
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Bottom Sheet Dialog - 스케줄 추가 */}
+      {showBottomSheet && (
+        <>
+          <div className="bottom-sheet-overlay" onClick={handleCloseBottomSheet}></div>
+          <div className="bottom-sheet">
+            <div className="bottom-sheet-header">
+              <h3>스케줄 추가</h3>
+              <button className="bottom-sheet-close" onClick={handleCloseBottomSheet}>×</button>
+            </div>
+            
+            <div className="bottom-sheet-content">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddTodo(); }}>
+                <div className="bottom-sheet-form-group">
+                  <label>스케줄 내용</label>
+                  <input
+                    type="text"
+                    value={newTodo}
+                    onChange={(e) => setNewTodo(e.target.value)}
+                    placeholder="무슨 스케줄인가요?"
+                    className="bottom-sheet-input"
+                  />
+                </div>
+
+                <div className="bottom-sheet-form-group">
+                  <label>사진 추가 (선택)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    id="bottom-sheet-image-upload"
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="bottom-sheet-image-upload" className="bottom-sheet-image-btn">
+                    📷 사진 선택
+                  </label>
+                  {imagePreview && (
+                    <div className="bottom-sheet-image-preview">
+                      <img src={imagePreview} alt="미리보기" />
+                      <button type="button" onClick={removeImage} className="bottom-sheet-remove-image">×</button>
+                    </div>
+                  )}
+                </div>
+
+                <button type="submit" className="bottom-sheet-submit-btn">
+                  스케줄 추가하기
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 목표 추가 Bottom Sheet Dialog */}
+      {showGoalBottomSheet && (
+        <>
+          <div className="bottom-sheet-overlay" onClick={handleCloseGoalBottomSheet}></div>
+          <div className="bottom-sheet">
+            <div className="bottom-sheet-header">
+              <h3>목표 추가</h3>
+              <button className="bottom-sheet-close" onClick={handleCloseGoalBottomSheet}>×</button>
+            </div>
+            
+            <div className="bottom-sheet-content">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddGoal(); }}>
+                <div className="bottom-sheet-form-group">
+                  <label>목표 내용</label>
+                  <input
+                    type="text"
+                    value={newGoal}
+                    onChange={(e) => setNewGoal(e.target.value)}
+                    placeholder="오늘 꼭 달성하고 싶은 목표를 적어보세요"
+                    className="bottom-sheet-input"
+                  />
+                </div>
+
+                <button type="submit" className="bottom-sheet-submit-btn">
+                  목표 추가하기
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
 
       {showCelebrate && (
         <div className="celebrate-overlay">

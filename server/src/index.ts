@@ -5,6 +5,8 @@ import signupRoutes from './routes/signup';
 import loginRoutes from './routes/login';
 import todosRoutes from './routes/todos';
 import goalsRoutes from './routes/goals';
+import commentsRoutes from './routes/comments';
+import likesRoutes from './routes/likes';
 
 dotenv.config();
 
@@ -24,6 +26,8 @@ app.use('/api/auth', signupRoutes);
 app.use('/api/auth', loginRoutes);
 app.use('/api/todos', todosRoutes);
 app.use('/api/goals', goalsRoutes);
+app.use('/api', commentsRoutes);
+app.use('/api', likesRoutes);
 
 // 기본 라우트
 app.get('/', (req, res) => {

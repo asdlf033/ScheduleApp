@@ -6,20 +6,22 @@
 }
 
 .settings-header {
-  background-color: #0f131c;
-  padding: 20px;
+  background-color: #0b0d11;
+  padding: 16px 20px;
   border-bottom: 1px solid #1c2231;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
 }
 
 .settings-header h1 {
   margin: 0;
-  font-size: 24px;
-  color: #f5f7fb;
-  letter-spacing: 0.2px;
+  font-size: 1.35rem;
+  color: #e8ecf4;
+  font-weight: 600;
+  text-align: left;
 }
 
 .settings-content {

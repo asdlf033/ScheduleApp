@@ -60,6 +60,19 @@ const initializeDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // image_url 컬럼이 없으면 추가 (기존 테이블 마이그레이션)
+    try {
+      await connection.execute(`
+        ALTER TABLE todos ADD COLUMN image_url VARCHAR(500) NULL AFTER date
+      `);
+      console.log('image_url 컬럼 추가 완료');
+    } catch (error: any) {
+      // 컬럼이 이미 존재하면 무시
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        console.error('image_url 컬럼 추가 오류:', error.message);
+      }
+    }
+
     // goals 테이블 생성
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS goals (
@@ -73,6 +86,49 @@ const initializeDatabase = async () => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_goal_date (date),
         INDEX idx_goal_user_date (user_id, date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // users 테이블에 profile_image_url 컬럼 추가 (없으면)
+    try {
+      await connection.execute(`
+        ALTER TABLE users ADD COLUMN profile_image_url VARCHAR(500) NULL
+      `);
+      console.log('profile_image_url 컬럼 추가 완료');
+    } catch (error: any) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        console.error('profile_image_url 컬럼 추가 오류:', error.message);
+      }
+    }
+
+    // likes 테이블 생성
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS likes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        todo_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_like (todo_id, user_id),
+        INDEX idx_todo_id (todo_id),
+        INDEX idx_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // comments 테이블 생성
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        todo_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_todo_id (todo_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_created_at (created_at)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
